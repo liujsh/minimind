@@ -27,6 +27,26 @@ docker run --gpus all -it --rm -v $(pwd):/workspace/minimind -w /workspace/minim
 - 将 `--epochs` 和 `--batch_size` 设置为较小值做试验，确认无误后再放大。 
 - 使用 `--use_wandb` 时注意网络与 API key，或临时关闭以减少外部依赖。
 
+自动化提交示例
+----------------
+仓库中已提供 `submit_autodl.sh` 用于自动构建镜像并运行容器。示例用法：
+
+```
+# 本地或 Autodl 控制台中运行：
+./submit_autodl.sh --host-dir /data/minimind --mode lora --gpus 0 --tag minimind:autodl
+
+# 若需推镜像到 registry（可选），先设置环境变量：
+export DOCKER_REGISTRY=registry.example.com
+./submit_autodl.sh --host-dir /data/minimind --mode lora --gpus 0 --tag minimind:autodl
+```
+
+脚本行为：
+- 使用仓内 `Dockerfile` 构建镜像（tag 由 `--tag` 指定）。
+- 若设置 `DOCKER_REGISTRY` 会自动把镜像 tag 并 push。  
+- 运行容器时把 `--host-dir` 挂载到容器 `/workspace/minimind` 并执行 `./run_sft.sh`。
+
+注意：脚本假设宿主已安装 Docker 并能访问 GPU（NVIDIA Container Toolkit）。部分 Autodl 平台不允许直接运行 `docker build`，这时请使用平台的镜像构建/上传流程，或在本地构建并推到 registry，然后在 Autodl 拉取运行。
+
 上传数据：保证 `dataset/sft_mini_512.jsonl` 随仓库一并上传，或在容器内从云盘/对象存储拉取到 `dataset/`。
 
 运行后检视：训练脚本会把模型保存在 `--save_dir` 指定目录（默认 `../out`），请在容器运行结束前把权重拷贝到外部卷或云存储。
